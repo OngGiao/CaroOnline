@@ -10,6 +10,13 @@ export class GameScene extends Phaser.Scene {
     private socket = null;
     private yourValue = 0;
     private currentValue = 1;
+
+    private xWin = 0;
+    private oWin = 0;
+    private xWinText;
+    private oWinText;
+    private pauseGame = false;
+    private caroValues = [];
     constructor() {
         super({
             key: "GameScene"
@@ -29,7 +36,6 @@ export class GameScene extends Phaser.Scene {
 
         this.socket.on('setValue', (data) => {
             this.yourValue = data.value;
-            console.log(data);
         })
 
         this.socket.on('caroValue', (data) => {
@@ -42,9 +48,33 @@ export class GameScene extends Phaser.Scene {
             if (value == -1) {
                 img = 'oCaro';
             }
-            var caro = this.add.image(x * box, y * box, img).setOrigin(0, 0);
+            /////3.0
+            var caro = this.add.image(x * box, y * box + 50, img).setOrigin(0, 0);
             caro.displayHeight = box;
             caro.displayWidth = box;
+            this.caroValues.push(caro);
+        })
+
+        this.socket.on('caroWin', (data) => {
+            this.pauseGame = true;
+            if (data.value == 1) {
+                this.xWin = this.xWin + 1;
+                alert("X win!");
+            }
+            else {
+                this.oWin = this.oWin + 1;
+                alert("O win!");
+            }
+        })
+
+        this.socket.on('caroRestart', (data) => {
+            this.pauseGame = false;
+            this.currentValue = data.currentValue;
+            this.board = data.board;
+            for (let i = 0; i < this.caroValues.length; i++) {
+                this.caroValues[i].destroy();
+            }
+            this.caroValues = [];
         })
     }
     preload(): void {
@@ -53,8 +83,20 @@ export class GameScene extends Phaser.Scene {
     }
 
     create(): void {
-        var grid = this.add.grid(0, 0, boxX * box, boxY * box, box, box, 0xd1d1c9).setOrigin(0, 0);
+        /////3.0
+        var grid = this.add.grid(0, 50, boxX * box, boxY * box, box, box, 0xd1d1c9).setOrigin(0, 0);
         grid.setInteractive().on('pointerdown', this.cellClick.bind(this));
+
+        this.add.image(box, 10, 'xCaro').setOrigin(0, 0).setDisplaySize(box, box);
+        this.xWinText = this.add.text(box + 30, 1, this.xWin.toString(), {
+            font: "45px Arial",
+            fill: "#000"
+        });
+        this.add.image(box * 4, 10, 'oCaro').setOrigin(0, 0).setDisplaySize(box, box);
+        this.oWinText = this.add.text(box * 4 + 30, 1, this.oWin.toString(), {
+            font: "45px Arial",
+            fill: "#000"
+        });
 
         this.board = [];
         for (let x = 0; x < boxX; x++) {
@@ -63,140 +105,30 @@ export class GameScene extends Phaser.Scene {
                 this.board[x][y] = 0;
             }
         }
+
+        const restartButton = this.add.text(box * 10, 20, 'Chơi lại', { fill: '#0645AD' });
+        restartButton.setInteractive({ cursor: 'pointer' });        
+        restartButton.on('pointerdown', () => {
+            this.socket.emit('caroRestart');
+        });
+
     }
     update(): void {
-
+        this.xWinText.text = this.xWin;
+        this.oWinText.text = this.oWin;
     }
     //private i = 1;
     cellClick(pointer): void {
+        if (this.pauseGame) {
+            return;
+        }
+
         var xCell = Math.floor(pointer.downX / box);
-        var yCell = Math.floor(pointer.downY / box);
+        /////3.0
+        var yCell = Math.floor((pointer.downY - 50) / box);
 
         if (this.currentValue == this.yourValue) {
             this.socket.emit('caroValue', { board: this.board, x: xCell, y: yCell, value: this.yourValue });
         }
-
-
-
-
-
-
-        // var value = 1;
-        // var img = 'xCaro';
-        // if (this.i % 2 == 0) {
-        //     img = 'oCaro';
-        //     value = -1;
-        // }
-        // this.board[xCell][yCell] = value;
-        // var caro = this.add.image(xCell * box, yCell * box, img).setOrigin(0, 0);
-        // caro.displayHeight = box;
-        // caro.displayWidth = box;
-        // this.i++;
-        // if (this.checkWin(value, this.board, this.winPatterns)) {
-        //     alert("Win");
-        // }
     }
-
-
-
-    checkWinPatterns(x, y, value, board, winPatterns) {
-        ////x->col
-        ////y->row
-        var result = false;
-        for (let i = 0; i < winPatterns.length; i++) {
-            let pattern = winPatterns[i];
-            let count = 0;
-            for (let row = 0; row < 5; row++) {
-                for (let col = 0; col < 5; col++) {
-                    if (board[x + col][y + row] == value && pattern[col][row] == 1) count++;
-                }
-            }
-
-            if (count == 5) {
-                result = true;
-                break;
-            }
-        }
-
-        return result;
-    }
-
-    checkWin(value, board, winPatterns) {
-        for (let yCol = 0; yCol < boxY - 5 - 1; yCol++) {
-            for (let xRow = 0; xRow < boxX - 5 - 1; xRow++) {
-                let check = this.checkWinPatterns(xRow, yCol, value, board, winPatterns);
-                if (check) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private winPatterns = [
-        [[1, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0],
-        [0, 0, 1, 0, 0],
-        [0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 1]],
-
-        [[0, 0, 0, 0, 1],
-        [0, 0, 0, 1, 0],
-        [0, 0, 1, 0, 0],
-        [0, 1, 0, 0, 0],
-        [1, 0, 0, 0, 0]],
-
-        [[1, 1, 1, 1, 1],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0]],
-        [[0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 1],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0]],
-        [[0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 1],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0]],
-        [[0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 1],
-        [0, 0, 0, 0, 0]],
-        [[0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 1]],
-
-        [[1, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0]],
-        [[0, 1, 0, 0, 0],
-        [0, 1, 0, 0, 0],
-        [0, 1, 0, 0, 0],
-        [0, 1, 0, 0, 0],
-        [0, 1, 0, 0, 0]],
-        [[0, 0, 1, 0, 0],
-        [0, 0, 1, 0, 0],
-        [0, 0, 1, 0, 0],
-        [0, 0, 1, 0, 0],
-        [0, 0, 1, 0, 0]],
-        [[0, 0, 0, 1, 0],
-        [0, 0, 0, 1, 0],
-        [0, 0, 0, 1, 0],
-        [0, 0, 0, 1, 0],
-        [0, 0, 0, 1, 0]],
-        [[0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 1]]
-    ];
 };

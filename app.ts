@@ -25,7 +25,7 @@ io.on('connection', (socket) => {
   if (room.length > 1) {
     caroValue = -1;
   }
-  console.log(room);
+
   socket.emit('setValue', { value: caroValue });
 
   socket.on('caroValue', (data) => {
@@ -38,8 +38,131 @@ io.on('connection', (socket) => {
       return;
     }
     data.board[x][y] = value;
+
+    if (checkWin(value, board, winPatterns)) {
+      io.in(socket.roomId).emit('caroWin', data);
+    }
+
     data.currentValue = value * -1;
     io.in(socket.roomId).emit('caroValue', data);
   });
 
+  socket.on('caroRestart', () => {
+    var data = {
+      board: [],
+      currentValue: 1
+    };
+    for (let x = 0; x < 20; x++) {
+      data.board[x] = [];
+      for (let y = 0; y < 20; y++) {
+        data.board[x][y] = 0;
+      }
+    }
+   
+    io.in(socket.roomId).emit('caroRestart', data);
+  });
+
 });
+
+
+
+function checkWinPatterns(x, y, value, board, winPatterns) {
+  ////x->col
+  ////y->row
+  var result = false;
+  for (let i = 0; i < winPatterns.length; i++) {
+    let pattern = winPatterns[i];
+    let count = 0;
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 5; col++) {
+        if (board[x + col][y + row] == value && pattern[col][row] == 1) count++;
+      }
+    }
+
+    if (count == 5) {
+      result = true;
+      break;
+    }
+  }
+
+  return result;
+}
+
+function checkWin(value, board, winPatterns) {
+  for (let yCol = 0; yCol < 20 - 5 - 1; yCol++) {
+    for (let xRow = 0; xRow < 20 - 5 - 1; xRow++) {
+      let check = checkWinPatterns(xRow, yCol, value, board, winPatterns);
+      if (check) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+var winPatterns = [
+  [[1, 0, 0, 0, 0],
+  [0, 1, 0, 0, 0],
+  [0, 0, 1, 0, 0],
+  [0, 0, 0, 1, 0],
+  [0, 0, 0, 0, 1]],
+
+  [[0, 0, 0, 0, 1],
+  [0, 0, 0, 1, 0],
+  [0, 0, 1, 0, 0],
+  [0, 1, 0, 0, 0],
+  [1, 0, 0, 0, 0]],
+
+  [[1, 1, 1, 1, 1],
+  [0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0]],
+  [[0, 0, 0, 0, 0],
+  [1, 1, 1, 1, 1],
+  [0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0]],
+  [[0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0],
+  [1, 1, 1, 1, 1],
+  [0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0]],
+  [[0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0],
+  [1, 1, 1, 1, 1],
+  [0, 0, 0, 0, 0]],
+  [[0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0],
+  [1, 1, 1, 1, 1]],
+
+  [[1, 0, 0, 0, 0],
+  [1, 0, 0, 0, 0],
+  [1, 0, 0, 0, 0],
+  [1, 0, 0, 0, 0],
+  [1, 0, 0, 0, 0]],
+  [[0, 1, 0, 0, 0],
+  [0, 1, 0, 0, 0],
+  [0, 1, 0, 0, 0],
+  [0, 1, 0, 0, 0],
+  [0, 1, 0, 0, 0]],
+  [[0, 0, 1, 0, 0],
+  [0, 0, 1, 0, 0],
+  [0, 0, 1, 0, 0],
+  [0, 0, 1, 0, 0],
+  [0, 0, 1, 0, 0]],
+  [[0, 0, 0, 1, 0],
+  [0, 0, 0, 1, 0],
+  [0, 0, 0, 1, 0],
+  [0, 0, 0, 1, 0],
+  [0, 0, 0, 1, 0]],
+  [[0, 0, 0, 0, 1],
+  [0, 0, 0, 0, 1],
+  [0, 0, 0, 0, 1],
+  [0, 0, 0, 0, 1],
+  [0, 0, 0, 0, 1]]
+];
