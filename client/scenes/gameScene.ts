@@ -127,8 +127,8 @@ export class GameScene extends Phaser.Scene {
         /////3.0
         var yCell = Math.floor((pointer.downY - 50) / box);
 
-        if (this.currentValue == this.yourValue) {
+        //if (this.currentValue == this.yourValue) {
             this.socket.emit('caroValue', { board: this.board, x: xCell, y: yCell, value: this.yourValue });
-        }
+        //}
     }
 };
