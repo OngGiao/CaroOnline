@@ -107,7 +107,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         const restartButton = this.add.text(box * 10, 20, 'Chơi lại', { fill: '#0645AD' });
-        restartButton.setInteractive({ cursor: 'pointer' });        
+        restartButton.setInteractive({ cursor: 'pointer' });
         restartButton.on('pointerdown', () => {
             this.socket.emit('caroRestart');
         });
@@ -127,8 +127,9 @@ export class GameScene extends Phaser.Scene {
         /////3.0
         var yCell = Math.floor((pointer.downY - 50) / box);
 
-        //if (this.currentValue == this.yourValue) {
+        if (this.currentValue == this.yourValue) {
+            this.currentValue = this.currentValue * -1;
             this.socket.emit('caroValue', { board: this.board, x: xCell, y: yCell, value: this.yourValue });
-        //}
+        }
     }
 };

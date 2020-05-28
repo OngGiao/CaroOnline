@@ -8,7 +8,8 @@ const config: Phaser.Types.Core.GameConfig = {
     backgroundColor: '#efefef',
     scene: [GameScene],
     scale: {
-        autoCenter: Phaser.Scale.CENTER_BOTH
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_HORIZONTALLY
     }    
 };
 
