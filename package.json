@@ -23,11 +23,11 @@
     },
     "devDependencies": {
         "expose-loader": "^0.7.5",
-        "phaser": "^3.23.0",
-        "ts-loader": "^7.0.2",
+        "phaser": "^3.55.2",
+        "ts-loader": "^9.4.2",
         "typescript": "^3.8.3",
-        "webpack": "^4.43.0",
-        "webpack-cli": "^3.3.11",
+        "webpack": "^5.75.0",
+        "webpack-cli": "^5.0.1",
         "write-file-webpack-plugin": "^4.5.1"
     }
 }
